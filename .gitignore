@@ -49,3 +49,6 @@ __pycache__/
 # Backup files
 *.bak
 *.backup
+
+# Hex files
+*.hex 
