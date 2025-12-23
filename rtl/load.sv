@@ -13,7 +13,11 @@ module dmem_instructions (
 );
     always_comb begin
         address = 32'b0; // Default address
-        
+        if (lw_enable || lbu_enable) begin
+            address = {{12{immediate[19]}}, immediate}; // Sign-extend immediate for load instructions
+        end else if (sb_enable || sw_enable) begin
+            address = {{20{offset[11]}}, offset}; // Sign-extend offset for store instructions
+        end
     end
     
 endmodule

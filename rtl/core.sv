@@ -2,6 +2,7 @@ module core (
     input logic clk,
     input logic rst,
     output logic [31:0] registers_out [0:15],
+    output logic [31:0] instruction_out,
     output logic [31:0] pc_out
 );
     logic [31:0] pc;
@@ -22,7 +23,7 @@ module core (
         .pc_in(pc),
         .instruction_out(instruction)
     );
-
+    assign instruction_out = instruction;
     logic [4:0] rs1, rs2, rd;
     /* verilator lint_off UNUSEDSIGNAL */
     logic [6:0] funct7, opcode;
