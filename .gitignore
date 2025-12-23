@@ -15,6 +15,9 @@ Vdecoder
 Vgpr
 Vpc
 Vcore
+debug_mem
+debug_trace
+golden_model
 
 # Waveform files
 *.vcd
