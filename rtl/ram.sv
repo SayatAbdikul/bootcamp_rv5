@@ -17,7 +17,7 @@ module ram (
             memory[i] = 32'b0;
         end
         // Then load from file if it exists
-        $readmemh("/Users/sayat/Documents/GitHub/bootcamp_rv5/dmem_small.hex", memory);
+        $readmemh("/Users/sayat/Documents/GitHub/bootcamp_rv5/dmem.hex", memory);
     end
     
     // Helper to get word address from byte address
