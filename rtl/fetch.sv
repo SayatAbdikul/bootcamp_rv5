@@ -4,13 +4,17 @@ module fetch (
     /* verilator lint_on UNUSEDSIGNAL */
     output logic [31:0] instruction_out
 );
-    
-    logic [31:0] memory [0:16777215]; // Simple instructions array
+
+    import "DPI-C" function void mem_init(string path);
+    import "DPI-C" function int mem_read(int addr);
+
     initial begin
-        $readmemh("/Users/sayat/Documents/GitHub/bootcamp_rv5/imem.hex", memory); // Initialize memory from file
+        mem_init("/Users/sayat/Documents/GitHub/bootcamp_rv5/imem.hex");
     end
+
     always_comb begin
-        instruction_out = memory[pc_in[25:2]];
+        // Word-aligned read; mem_read handles alignment internally
+        instruction_out = mem_read(pc_in);
         // if((pc_in - 4) % 40000 == 0)
         //     $display("FETCH: PC=0x%08h INSTR=0x%08h", pc_in, instruction_out);
     end

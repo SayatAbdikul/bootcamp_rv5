@@ -5,6 +5,7 @@
 #include <cstring>
 #include <iomanip>
 #include "Vcore.h"
+#include "memory.h"
 
 using namespace std;
 
@@ -13,7 +14,6 @@ class RV32GoldenModel {
 private:
     uint32_t gpr[16];
     uint32_t pc;
-    uint32_t memory[131072]; // Unified 512KB word-addressed memory
     uint32_t opcode, rd, rs1, rs2, funct3, funct7;
     int32_t imm_i;
     uint32_t imm_u;
@@ -40,29 +40,23 @@ private:
     }
     
     uint32_t load_word(uint32_t byte_addr) {
-        uint32_t word_addr = (byte_addr >> 2) & 0x1FFFF;
-        return memory[word_addr];
+        return static_cast<uint32_t>(mem_read(static_cast<int>(byte_addr)));
     }
     
     uint32_t load_byte_unsigned(uint32_t byte_addr) {
-        uint32_t word_addr = (byte_addr >> 2) & 0x1FFFF;
+        uint32_t word = static_cast<uint32_t>(mem_read(static_cast<int>(byte_addr)));
         uint32_t byte_offset = byte_addr & 0x3;
-        uint32_t word = memory[word_addr];
         return (word >> (byte_offset * 8)) & 0xFF;
     }
     
     void store_word(uint32_t byte_addr, uint32_t value) {
-        uint32_t word_addr = (byte_addr >> 2) & 0x1FFFF;
-        memory[word_addr] = value;
+        mem_write(static_cast<int>(byte_addr), static_cast<int>(value), 0xF);
     }
     
     void store_byte(uint32_t byte_addr, uint32_t value) {
-        uint32_t word_addr = (byte_addr >> 2) & 0x1FFFF;
         uint32_t byte_offset = byte_addr & 0x3;
-        uint32_t mask = 0xFF << (byte_offset * 8);
-        uint32_t word = memory[word_addr];
-        word = (word & ~mask) | ((value & 0xFF) << (byte_offset * 8));
-        memory[word_addr] = word;
+        unsigned char mask = 1u << byte_offset;
+        mem_write(static_cast<int>(byte_addr), static_cast<int>(value), mask);
     }
 
 public:
@@ -73,26 +67,15 @@ public:
     void reset() {
         memset(gpr, 0, sizeof(gpr));
         pc = 0;
-        memset(memory, 0, sizeof(memory));
     }
     
     bool load_memory(const string& filename) {
-        ifstream file(filename);
-        if (!file.is_open()) return false;
-        
-        string line;
-        int addr = 0;
-        while (getline(file, line) && addr < 131072) {
-            if (line.empty() || line[0] == '#') continue;
-            uint32_t word = stoul(line, nullptr, 16);
-            memory[addr++] = word;
-        }
-        file.close();
+        mem_init(filename.c_str());
         return true;
     }
     
     void step() {
-        uint32_t instr = memory[(pc >> 2) & 0x1FFFF];
+        uint32_t instr = static_cast<uint32_t>(mem_read(static_cast<int>(pc)));
         uint32_t current_pc = pc;
         decode(instr);
         
@@ -152,7 +135,7 @@ public:
     
     // Get instruction at PC
     uint32_t get_instruction_at_pc() const {
-        return memory[(pc >> 2) & 0x1FFFF];
+        return static_cast<uint32_t>(mem_read(static_cast<int>(pc)));
     }
     
     // Decode and print instruction
@@ -240,7 +223,7 @@ int main(int argc, char** argv) {
     tfp->open("core_tb.vcd");
     vluint64_t time = 0;
 
-    // Initialize Golden Model
+    // Initialize Golden Model and shared memory
     RV32GoldenModel golden;
     if (!golden.load_memory("imem.hex")) {
         cerr << "Error: Cannot load imem.hex" << endl;
